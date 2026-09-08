@@ -1,6 +1,6 @@
 benchmark=Ghia_Ghia_Shin_1982_Re400
 number_of_points=17
-rmse=0.003644881769891509
-maximum_absolute_error=0.008269468567250249
+rmse=0.003644883829514999
+maximum_absolute_error=0.008269453633555218
 absolute_error_normalization=lid_velocity
-maximum_relative_error_nonzero_points=0.04162490470149838
+maximum_relative_error_nonzero_points=0.04162524855790162

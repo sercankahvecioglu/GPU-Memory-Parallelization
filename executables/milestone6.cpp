@@ -366,7 +366,11 @@ void check_against_serial(const Populations& distributed, const Domain& d,
         std::abs(actual.kinetic_energy - serial_energy) > 1e-11 * std::max(1.0, serial_energy) ||
         std::abs(actual.mass - static_cast<double>(nx) * ny) > 1e-11 * nx * ny)
         throw std::runtime_error("Distributed populations, mass, or energy disagree with serial reference");
-    if (d.rank == 0) std::cout << "Serial comparison passed: maximum population error=" << maximum_error << '\n';
+    if (d.rank == 0) std::cout << std::setprecision(17)
+        << "Serial comparison passed: maximum population error=" << maximum_error
+        << " mass_relative_error=" << std::abs(actual.mass - serial_mass) / serial_mass
+        << " energy_absolute_error=" << std::abs(actual.kinetic_energy - serial_energy)
+        << " serial_mass=" << serial_mass << " serial_energy=" << serial_energy << '\n';
 }
 int positive_integer(const std::string& value) {
     std::size_t end = 0;
@@ -386,25 +390,28 @@ int main(int argc, char* argv[]) {
         if (provided < MPI_THREAD_FUNNELED) throw std::runtime_error("MPI_THREAD_FUNNELED is required");
         Kokkos::initialize(argc, argv);
         {
-            bool check = false, check_solver = false;
+            bool check = false, check_solver = false, benchmark = false;
             int steps = -1;
             std::vector<std::string> dimensions;
             for (int i = 1; i < argc; ++i) {
                 if (std::string(argv[i]) == "--check-halos") check = true;
                 else if (std::string(argv[i]) == "--check-solver") check_solver = true;
+                else if (std::string(argv[i]) == "--benchmark") benchmark = true;
                 else if (std::string(argv[i]) == "--steps") {
                     if (++i >= argc) throw std::invalid_argument("--steps requires a nonnegative integer");
                     steps = std::string(argv[i]) == "0" ? 0 : positive_integer(argv[i]);
                 } else dimensions.emplace_back(argv[i]);
             }
             if (!dimensions.empty() && dimensions.size() != 2) {
-                throw std::invalid_argument("Usage: milestone6 [NX NY] [--steps N] [--check-halos] [--check-solver]");
+                throw std::invalid_argument("Usage: milestone6 [NX NY] [--steps N] [--check-halos] [--check-solver] [--benchmark]");
             }
             const int nx = dimensions.empty() ? 128 : positive_integer(dimensions[0]);
             const int ny = dimensions.empty() ? 128 : positive_integer(dimensions[1]);
             if (steps < 0) steps = check && !check_solver ? 0 : 1000;
             if (check_solver && static_cast<double>(nx) * ny > 65536)
                 throw std::invalid_argument("--check-solver is limited to 65536 cells");
+            if (benchmark && (check || check_solver || steps == 0))
+                throw std::invalid_argument("--benchmark requires positive steps and no validation flags");
             const Domain domain(nx, ny);
             Populations f("local_populations_with_x_ghosts", domain.local_nx + 2, ny, Q);
             HaloExchange halo(ny);
@@ -429,14 +436,43 @@ int main(int argc, char* argv[]) {
                     << " kinetic_energy=" << diagnostics.kinetic_energy
                     << " relative_mass_drift=" << (diagnostics.mass - initial.mass) / initial.mass << '\n';
             };
+            // Warm up kernels/communication before timing, then reset the fluid so
+            // every measured run executes the same physical initial-value problem.
+            constexpr int WARMUP_STEPS = 100;
+            if (benchmark) {
+                for (int step = 0; step < WARMUP_STEPS; ++step)
+                    perform_timestep(f, next, halo, domain, rho, ux, uy);
+                initialize_equilibrium(f, domain);
+                update_local_fields(f, domain, rho, ux, uy);
+            }
             report(0, initial);
+            double start = 0.0;
+            if (benchmark) {
+                Kokkos::fence();
+                MPI_Barrier(MPI_COMM_WORLD);
+                start = MPI_Wtime();
+            }
             Diagnostics final = initial;
             for (int step = 0; step < steps; ++step) {
                 perform_timestep(f, next, halo, domain, rho, ux, uy);
-                if ((step + 1) % 100 == 0 || step + 1 == steps) {
+                if (!benchmark && ((step + 1) % 100 == 0 || step + 1 == steps)) {
                     final = global_diagnostics(f, domain, rho, ux, uy);
                     report(step + 1, final);
                 }
+            }
+            if (benchmark) {
+                Kokkos::fence();
+                const double local_seconds = MPI_Wtime() - start;
+                double seconds = 0.0;
+                MPI_Allreduce(&local_seconds, &seconds, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+                // Global diagnostics and output are deliberately outside timing.
+                final = global_diagnostics(f, domain, rho, ux, uy);
+                report(steps, final);
+                if (rank == 0) std::cout << std::setprecision(17)
+                    << "BENCHMARK nx=" << nx << " ny=" << ny << " steps=" << steps
+                    << " ranks=" << domain.ranks << " warmup=" << WARMUP_STEPS
+                    << " seconds=" << seconds
+                    << " mlups=" << static_cast<double>(nx) * ny * steps / seconds / 1e6 << '\n';
             }
             if (check_solver) check_against_serial(f, domain, steps, final);
         }  // Destroy Kokkos Views before finalizing Kokkos.

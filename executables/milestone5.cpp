@@ -1,5 +1,6 @@
 #include <Kokkos_Core.hpp>
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cmath>
@@ -9,6 +10,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include "lbm.hpp"
 
@@ -20,6 +22,9 @@ constexpr int NY = 128;
 constexpr int MAX_STEPS = 200000;
 constexpr int CONVERGENCE_CHECK_INTERVAL = 100;
 constexpr int BENCHMARK_STEPS = 2000;
+// Single executions are unreliable (see benchmarking notes); repeat and report
+// the median, alongside the min/max, instead of trusting one measurement.
+constexpr int BENCHMARK_REPEATS = 7;
 
 constexpr double LID_VELOCITY = 0.1;
 // This gives nu = 0.032 and Re = u_lid * NX / nu = 400 exactly.
@@ -179,22 +184,46 @@ void verify_result(const Lattice& lattice) {
     }
 }
 
-double benchmark_mlups(Lattice& lattice, double& benchmark_seconds) {
-    // The flow is already steady. Time only solver timesteps: no convergence
-    // reductions, file output, or terminal output is included.
-    Kokkos::fence();
-    const auto start = std::chrono::steady_clock::now();
+struct BenchmarkResult {
+    std::vector<double> seconds_per_repeat;
+    std::vector<double> mlups_per_repeat;
+    double median_seconds, median_mlups, min_mlups, max_mlups;
+};
 
-    for (int step = 0; step < BENCHMARK_STEPS; ++step) {
-        perform_timestep(lattice);
+// The flow is already steady, so repeating the same solver-only steps measures
+// throughput, not physics. Each repeat is timed independently, bracketed by
+// Kokkos::fence() so no asynchronous work leaks into (or out of) the window;
+// no convergence reductions, file output, or terminal output are included.
+BenchmarkResult benchmark_mlups(Lattice& lattice) {
+    BenchmarkResult result;
+    const double updates = static_cast<double>(NX) * NY * BENCHMARK_STEPS;
+
+    for (int repeat = 0; repeat < BENCHMARK_REPEATS; ++repeat) {
+        Kokkos::fence();
+        const auto start = std::chrono::steady_clock::now();
+
+        for (int step = 0; step < BENCHMARK_STEPS; ++step) {
+            perform_timestep(lattice);
+        }
+
+        Kokkos::fence();
+        const auto end = std::chrono::steady_clock::now();
+        const double seconds = std::chrono::duration<double>(end - start).count();
+        result.seconds_per_repeat.push_back(seconds);
+        result.mlups_per_repeat.push_back(updates / seconds / 1.0e6);
     }
 
-    Kokkos::fence();
-    const auto end = std::chrono::steady_clock::now();
-    benchmark_seconds = std::chrono::duration<double>(end - start).count();
+    std::vector<double> sorted_mlups = result.mlups_per_repeat;
+    std::sort(sorted_mlups.begin(), sorted_mlups.end());
+    result.median_mlups = sorted_mlups[sorted_mlups.size() / 2];
+    result.min_mlups = sorted_mlups.front();
+    result.max_mlups = sorted_mlups.back();
 
-    const double updates = static_cast<double>(NX) * NY * BENCHMARK_STEPS;
-    return updates / benchmark_seconds / 1.0e6;
+    std::vector<double> sorted_seconds = result.seconds_per_repeat;
+    std::sort(sorted_seconds.begin(), sorted_seconds.end());
+    result.median_seconds = sorted_seconds[sorted_seconds.size() / 2];
+
+    return result;
 }
 
 }  // namespace
@@ -253,8 +282,7 @@ int main(int argc, char* argv[]) {
         if (!(velocity_change < CONVERGENCE_LIMIT)) {
             throw std::runtime_error("cavity did not converge within MAX_STEPS");
         }
-        double benchmark_seconds = 0.0;
-        const double mlups = benchmark_mlups(lattice, benchmark_seconds);
+        const BenchmarkResult benchmark = benchmark_mlups(lattice);
 
         verify_result(lattice);
         write_fields(lattice, output_directory);
@@ -270,12 +298,38 @@ int main(int argc, char* argv[]) {
                 << "maximum_velocity_change=" << velocity_change << '\n'
                 << "convergence_runtime_seconds=" << seconds << '\n'
                 << "benchmark_steps=" << BENCHMARK_STEPS << '\n'
-                << "benchmark_seconds=" << benchmark_seconds << '\n'
-                << "mlups=" << mlups << '\n';
+                << "benchmark_repeats=" << BENCHMARK_REPEATS << '\n'
+                << "benchmark_seconds_median=" << benchmark.median_seconds << '\n'
+                << "mlups=" << benchmark.median_mlups << '\n'
+                << "mlups_min=" << benchmark.min_mlups << '\n'
+                << "mlups_max=" << benchmark.max_mlups << '\n';
+
+        std::ofstream mlups_report(output_directory / "mlups_report.txt");
+        mlups_report << std::setprecision(16)
+                     << "# Milestone 5: lid-driven cavity MLUPS benchmark\n"
+                     << "# See notes: https://pastewka.github.io/Accelerators/notes/benchmarking.html\n"
+                     << "grid=" << NX << 'x' << NY << '\n'
+                     << "backend=" << Kokkos::DefaultExecutionSpace::name() << '\n'
+                     << "solver_only_steps_per_repeat=" << BENCHMARK_STEPS << '\n'
+                     << "repeats=" << BENCHMARK_REPEATS << '\n'
+                     << "note=each repeat is bracketed by Kokkos::fence() so the timer only "
+                        "measures completed device work; convergence, file I/O, and terminal "
+                        "output are excluded from the timed region\n";
+        for (int repeat = 0; repeat < BENCHMARK_REPEATS; ++repeat) {
+            mlups_report << "repeat_" << repeat + 1
+                         << "_seconds=" << benchmark.seconds_per_repeat[repeat]
+                         << " mlups=" << benchmark.mlups_per_repeat[repeat] << '\n';
+        }
+        mlups_report << "median_mlups=" << benchmark.median_mlups << '\n'
+                     << "min_mlups=" << benchmark.min_mlups << '\n'
+                     << "max_mlups=" << benchmark.max_mlups << '\n';
 
         std::cout << "Reached steady state after " << completed_steps
                   << " steps in " << seconds << " seconds\n"
-                  << "Performance benchmark: " << mlups << " MLUPS ("
+                  << "Performance benchmark: " << benchmark.median_mlups
+                  << " MLUPS median (" << benchmark.min_mlups << "-"
+                  << benchmark.max_mlups << " MLUPS range across "
+                  << BENCHMARK_REPEATS << " repeats of "
                   << BENCHMARK_STEPS << " solver-only steps)\n"
                   << "Results written to " << output_directory << '\n';
     } catch (const std::exception& error) {

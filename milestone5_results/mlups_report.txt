@@ -1,0 +1,17 @@
+# Milestone 5: lid-driven cavity MLUPS benchmark
+# See notes: https://pastewka.github.io/Accelerators/notes/benchmarking.html
+grid=128x128
+backend=Serial
+solver_only_steps_per_repeat=2000
+repeats=7
+note=each repeat is bracketed by Kokkos::fence() so the timer only measures completed device work; convergence, file I/O, and terminal output are excluded from the timed region
+repeat_1_seconds=1.776255483 mlups=18.44779667880693
+repeat_2_seconds=1.797723944 mlups=18.22749266335633
+repeat_3_seconds=1.781181332 mlups=18.39677937967519
+repeat_4_seconds=1.767280117 mlups=18.54148625608059
+repeat_5_seconds=1.782912248 mlups=18.37891911772878
+repeat_6_seconds=1.812666314 mlups=18.07723779435778
+repeat_7_seconds=1.79191419 mlups=18.28658993988992
+median_mlups=18.37891911772878
+min_mlups=18.07723779435778
+max_mlups=18.54148625608059

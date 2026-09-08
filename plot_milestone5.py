@@ -29,29 +29,87 @@ def read_csv(filename):
         ]
 
 
+TITLE_SIZE = 20
+LABEL_SIZE = 18
+TICK_SIZE = 14
+
+
 def svg_start(width, height, title):
     return [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" '
         f'height="{height}" viewBox="0 0 {width} {height}">',
         '<rect width="100%" height="100%" fill="white"/>',
-        f'<text x="{width / 2}" y="25" text-anchor="middle" '
-        f'font-family="sans-serif" font-size="18">{title}</text>',
+        f'<text x="{width / 2}" y="28" text-anchor="middle" '
+        f'font-family="sans-serif" font-size="{TITLE_SIZE}">{title}</text>',
     ]
 
 
+# Viridis, sampled at fraction = 0, 1/4, 1/2, 3/4, 1 (perceptually uniform,
+# colour-blind safe, and legible when printed in greyscale). See Rule 9:
+# avoid jet/rainbow colour maps.
+_VIRIDIS_STOPS = [
+    (0.00, (68, 1, 84)),
+    (0.25, (59, 82, 139)),
+    (0.50, (33, 145, 140)),
+    (0.75, (94, 201, 98)),
+    (1.00, (253, 231, 37)),
+]
+
+
+def viridis(fraction):
+    """Linearly interpolate the viridis colour map at fraction in [0, 1]."""
+    fraction = min(max(fraction, 0.0), 1.0)
+    for (f0, c0), (f1, c1) in zip(_VIRIDIS_STOPS, _VIRIDIS_STOPS[1:]):
+        if fraction <= f1:
+            t = 0.0 if f1 == f0 else (fraction - f0) / (f1 - f0)
+            rgb = tuple(round(a + t * (b - a)) for a, b in zip(c0, c1))
+            return f"rgb({rgb[0]},{rgb[1]},{rgb[2]})"
+    return f"rgb({_VIRIDIS_STOPS[-1][1][0]},{_VIRIDIS_STOPS[-1][1][1]},{_VIRIDIS_STOPS[-1][1][2]})"
+
+
 def colour(value, maximum):
-    """Map zero to dark blue and maximum speed to yellow."""
-    fraction = 0.0 if maximum == 0.0 else min(value / maximum, 1.0)
-    red = int(25 + 230 * fraction)
-    green = int(45 + 185 * fraction)
-    blue = int(120 - 100 * fraction)
-    return f"rgb({red},{green},{blue})"
+    """Map speed to the viridis colour map (dark purple = 0, yellow = max)."""
+    fraction = 0.0 if maximum == 0.0 else value / maximum
+    return viridis(fraction)
+
+
+def colourbar(x, y, height, maximum, output_lines):
+    """Draw a vertical viridis colourbar with legible min/max/mid tick labels."""
+    width = 16
+    steps = 40
+    for i in range(steps):
+        fraction = i / (steps - 1)
+        segment_height = height / steps
+        segment_y = y + height - (i + 1) * segment_height
+        output_lines.append(
+            f'<rect x="{x:.2f}" y="{segment_y:.2f}" width="{width}" '
+            f'height="{segment_height + 0.5:.2f}" fill="{viridis(fraction)}"/>'
+        )
+    output_lines.append(
+        f'<rect x="{x:.2f}" y="{y:.2f}" width="{width}" height="{height:.2f}" '
+        'fill="none" stroke="black" stroke-width="1"/>'
+    )
+    for fraction, label in [(0.0, "0"), (0.5, f"{maximum / 2:.3f}"), (1.0, f"{maximum:.3f}")]:
+        tick_y = y + height - fraction * height
+        output_lines.append(
+            f'<line x1="{x + width}" y1="{tick_y:.2f}" x2="{x + width + 5}" '
+            f'y2="{tick_y:.2f}" stroke="black"/>'
+        )
+        output_lines.append(
+            f'<text x="{x + width + 9}" y="{tick_y + 4:.2f}" '
+            f'font-family="sans-serif" font-size="{TICK_SIZE}">{label}</text>'
+        )
+    output_lines.append(
+        f'<text x="{x - 6}" y="{y - 10}" font-family="sans-serif" '
+        f'font-size="{TICK_SIZE}">speed</text>'
+    )
 
 
 def plot_velocity_vectors(fields, output_directory):
-    width = height = 700
+    height = 700
+    width = 830
     margin = 55
-    plot_size = width - 2 * margin
+    plot_size = height - 2 * margin
     nx = int(max(row["x"] for row in fields)) + 1
     ny = int(max(row["y"] for row in fields)) + 1
     maximum_speed = max(row["speed"] for row in fields)
@@ -87,15 +145,17 @@ def plot_velocity_vectors(fields, output_directory):
             'marker-end="url(#arrow)"/>'
         )
 
-    svg.extend(axis_labels(width, height, margin))
+    svg.extend(axis_labels(margin, height, plot_size, nx, ny))
+    colourbar(margin + plot_size + 40, margin + 20, plot_size - 40, maximum_speed, svg)
     svg.append("</svg>")
     (output_directory / "cavity_velocity_vectors.svg").write_text("\n".join(svg))
 
 
 def plot_speed(fields, output_directory):
-    width = height = 700
+    height = 700
+    width = 830
     margin = 55
-    plot_size = width - 2 * margin
+    plot_size = height - 2 * margin
     nx = int(max(row["x"] for row in fields)) + 1
     ny = int(max(row["y"] for row in fields)) + 1
     maximum_speed = max(row["speed"] for row in fields)
@@ -112,22 +172,33 @@ def plot_speed(fields, output_directory):
             f'fill="{colour(row["speed"], maximum_speed)}"/>'
         )
 
-    svg.extend(axis_labels(width, height, margin))
-    svg.append(
-        f'<text x="{width - 65}" y="{height - 20}" text-anchor="end" '
-        f'font-family="sans-serif" font-size="12">max speed = {maximum_speed:.4f}</text>'
-    )
+    svg.extend(axis_labels(margin, height, plot_size, nx, ny))
+    colourbar(margin + plot_size + 40, margin + 20, plot_size - 40, maximum_speed, svg)
     svg.append("</svg>")
     (output_directory / "cavity_speed.svg").write_text("\n".join(svg))
 
 
-def axis_labels(width, height, margin):
-    return [
-        f'<text x="{width / 2}" y="{height - 12}" text-anchor="middle" '
-        'font-family="sans-serif">x</text>',
-        f'<text x="18" y="{height / 2}" text-anchor="middle" '
-        f'transform="rotate(-90 18 {height / 2})" font-family="sans-serif">y</text>',
+def axis_labels(margin, height, plot_size, nx, ny):
+    lines = [
+        f'<text x="{margin + plot_size / 2}" y="{height - 8}" text-anchor="middle" '
+        f'font-family="sans-serif" font-size="{LABEL_SIZE}">x (lattice sites)</text>',
+        f'<text x="16" y="{height / 2}" text-anchor="middle" '
+        f'transform="rotate(-90 16 {height / 2})" font-family="sans-serif" '
+        f'font-size="{LABEL_SIZE}">y (lattice sites)</text>',
     ]
+    for value, fraction in [(0, 0.0), (nx // 2, 0.5), (nx - 1, 1.0)]:
+        x = margin + fraction * plot_size
+        lines.append(f'<line x1="{x:.2f}" y1="{height - margin}" x2="{x:.2f}" '
+                      f'y2="{height - margin + 6}" stroke="black"/>')
+        lines.append(f'<text x="{x:.2f}" y="{height - margin + 24}" text-anchor="middle" '
+                      f'font-family="sans-serif" font-size="{TICK_SIZE}">{value}</text>')
+    for value, fraction in [(0, 0.0), (ny // 2, 0.5), (ny - 1, 1.0)]:
+        y = height - margin - fraction * plot_size
+        lines.append(f'<line x1="{margin - 6}" y1="{y:.2f}" x2="{margin}" '
+                      f'y2="{y:.2f}" stroke="black"/>')
+        lines.append(f'<text x="{margin - 10}" y="{y + 4:.2f}" text-anchor="end" '
+                      f'font-family="sans-serif" font-size="{TICK_SIZE}">{value}</text>')
+    return lines
 
 
 def plot_centerline(centerline, output_directory):
@@ -159,9 +230,10 @@ def plot_centerline(centerline, output_directory):
         f'<polyline points="{simulation_points}" fill="none" stroke="#1976d2" '
         'stroke-width="3"/>',
         f'<text x="{(left + right) / 2}" y="590" text-anchor="middle" '
-        'font-family="sans-serif">ux / lid velocity</text>',
+        f'font-family="sans-serif" font-size="{LABEL_SIZE}">ux / lid velocity</text>',
         f'<text x="22" y="{(top + bottom) / 2}" text-anchor="middle" '
-        f'transform="rotate(-90 22 {(top + bottom) / 2})" font-family="sans-serif">y / L</text>',
+        f'transform="rotate(-90 22 {(top + bottom) / 2})" font-family="sans-serif" '
+        f'font-size="{LABEL_SIZE}">y / L</text>',
     ])
 
     # Numerical tick marks make the sign and magnitude readable.
@@ -170,14 +242,14 @@ def plot_centerline(centerline, output_directory):
         svg.append(f'<line x1="{x:.2f}" y1="{bottom}" x2="{x:.2f}" '
                    f'y2="{bottom + 6}" stroke="black"/>')
         svg.append(f'<text x="{x:.2f}" y="{bottom + 23}" text-anchor="middle" '
-                   f'font-family="sans-serif" font-size="12">{tick:.1f}</text>')
+                   f'font-family="sans-serif" font-size="{TICK_SIZE}">{tick:.1f}</text>')
 
     for tick in [0.0, 0.25, 0.5, 0.75, 1.0]:
         y = screen_y(tick)
         svg.append(f'<line x1="{left - 6}" y1="{y:.2f}" x2="{left}" '
                    f'y2="{y:.2f}" stroke="black"/>')
         svg.append(f'<text x="{left - 10}" y="{y + 4:.2f}" text-anchor="end" '
-                   f'font-family="sans-serif" font-size="12">{tick:.2f}</text>')
+                   f'font-family="sans-serif" font-size="{TICK_SIZE}">{tick:.2f}</text>')
 
     # Benchmark points are deliberately not connected: they are tabulated data.
     for benchmark_x, benchmark_y in zip(GHIA_UX, GHIA_Y):
@@ -186,13 +258,13 @@ def plot_centerline(centerline, output_directory):
                    'fill="#d32f2f" stroke="white" stroke-width="1"/>')
 
     svg.extend([
-        '<line x1="455" y1="65" x2="490" y2="65" stroke="#1976d2" '
-        'stroke-width="3"/><text x="500" y="70" font-family="sans-serif" '
-        'font-size="13">LBM simulation</text>',
-        '<circle cx="472" cy="88" r="4" fill="#d32f2f"/>'
-        '<text x="500" y="93" font-family="sans-serif" font-size="13">'
+        f'<line x1="440" y1="65" x2="475" y2="65" stroke="#1976d2" '
+        f'stroke-width="3"/><text x="485" y="70" font-family="sans-serif" '
+        f'font-size="{TICK_SIZE}">LBM simulation</text>',
+        f'<circle cx="457" cy="90" r="4" fill="#d32f2f"/>'
+        f'<text x="485" y="95" font-family="sans-serif" font-size="{TICK_SIZE}">'
         'Ghia et al. (1982)</text>',
-        '<text x="400" y="525" font-family="sans-serif" font-size="12" '
+        f'<text x="400" y="525" font-family="sans-serif" font-size="{TICK_SIZE}" '
         'fill="gray">dashed line: ux = 0</text>',
         "</svg>",
     ])

@@ -1,0 +1,50 @@
+# Milestone 6: distributed lid-driven cavity MLUPS benchmark
+# Source: bwUniCluster 3.0 strong-scaling runs (executables/milestone6 --benchmark)
+# See notes: https://pastewka.github.io/Accelerators/notes/benchmarking.html
+#
+# Methodology (see executables/milestone6.cpp main(), --benchmark):
+#   - 100 warmup timesteps run and discarded, then the fluid is reset to the
+#     stationary initial condition so every repeat times the same problem.
+#   - Kokkos::fence() + MPI_Barrier() precede the timer; Kokkos::fence() again
+#     before it stops, so only completed device work is measured.
+#   - MPI_Allreduce(MAX) takes the slowest rank's wall time as the run time.
+#   - Global diagnostics and all I/O are outside the timed region.
+#   - MLUPS = (nx * ny * steps) / seconds / 1e6, i.e. total lattice updates
+#     across the whole distributed grid, one process/GPU per rank.
+#   - Each configuration was repeated 3 times (data: milestone6_results/scaling/*/raw.csv);
+#     median is reported, with the min-max range in brackets (single
+#     executions are unreliable per the benchmarking notes).
+
+## CPU: bwUniCluster 3.0 CPU node uc3n069, job 6822999
+## grid=256x256, steps=20000, one MPI rank per CPU core
+ranks  median_mlups   range_mlups
+    1        20.98    [20.98, 20.98]  # 20.9777-20.9847, rounds identically at 2 dp
+    2        41.03    [41.01, 41.72]
+    4        81.84    [81.80, 81.94]
+    8       161.92    [161.89, 162.34]
+   16       319.95    [319.41, 320.23]
+   32       616.97    [616.12, 620.97]
+
+single_core_baseline_mlups=20.98
+peak_mlups_32_cores=616.97
+speedup_at_32_cores=29.41 (616.97 / 20.98)
+
+## GPU: bwUniCluster 3.0 A100 node uc2n909, job 6822867
+## grid=4096x4096, steps=2000, one MPI rank per A100 GPU
+ranks  median_mlups   range_mlups
+    1      2998.01    [2997.66, 3000.07]
+    2      5739.85    [5739.32, 5740.49]
+    4     10432.21    [10430.53, 10442.36]
+
+single_gpu_baseline_mlups=2998.01
+peak_mlups_4_gpus=10432.21
+speedup_at_4_gpus=3.48 (10432.21 / 2998.01)
+
+## Headline comparison
+single_cpu_core_mlups=20.98
+single_a100_gpu_mlups=2998.01
+gpu_over_cpu_core_speedup=142.9
+
+Raw per-repeat timings: milestone6_results/scaling/6822999/raw.csv (CPU),
+milestone6_results/scaling/a100-6822867/raw.csv (GPU). Strong-scaling plots:
+milestone6_results/scaling/*/strong_scaling.{png,svg,pdf} (see plot_scaling.py).

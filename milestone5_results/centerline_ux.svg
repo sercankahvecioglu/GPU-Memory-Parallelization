@@ -1,38 +1,38 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="700" height="600" viewBox="0 0 700 600">
 <rect width="100%" height="100%" fill="white"/>
-<text x="350.0" y="25" text-anchor="middle" font-family="sans-serif" font-size="18">Vertical centreline velocity, Re = 400</text>
+<text x="350.0" y="28" text-anchor="middle" font-family="sans-serif" font-size="20">Vertical centreline velocity, Re = 400</text>
 <line x1="80" y1="545" x2="670" y2="545" stroke="black"/>
 <line x1="80" y1="45" x2="80" y2="545" stroke="black"/>
 <line x1="248.57" y1="45" x2="248.57" y2="545" stroke="gray" stroke-dasharray="5 5"/>
 <polyline points="248.57,545.00 246.00,543.05 240.95,539.14 236.06,535.23 231.32,531.33 226.70,527.42 222.17,523.52 217.71,519.61 213.32,515.70 208.96,511.80 204.62,507.89 200.29,503.98 195.95,500.08 191.60,496.17 187.22,492.27 182.82,488.36 178.39,484.45 173.94,480.55 169.48,476.64 165.02,472.73 160.57,468.83 156.16,464.92 151.80,461.02 147.53,457.11 143.38,453.20 139.37,449.30 135.54,445.39 131.93,441.48 128.55,437.58 125.45,433.67 122.66,429.77 120.20,425.86 118.10,421.95 116.37,418.05 115.04,414.14 114.12,410.23 113.61,406.33 113.51,402.42 113.82,398.52 114.54,394.61 115.65,390.70 117.13,386.80 118.97,382.89 121.13,378.98 123.60,375.08 126.35,371.17 129.34,367.27 132.55,363.36 135.94,359.45 139.50,355.55 143.18,351.64 146.98,347.73 150.86,343.83 154.80,339.92 158.78,336.02 162.79,332.11 166.82,328.20 170.84,324.30 174.86,320.39 178.86,316.48 182.85,312.58 186.81,308.67 190.74,304.77 194.65,300.86 198.53,296.95 202.38,293.05 206.22,289.14 210.03,285.23 213.83,281.33 217.62,277.42 221.39,273.52 225.16,269.61 228.93,265.70 232.69,261.80 236.46,257.89 240.24,253.98 244.02,250.08 247.82,246.17 251.63,242.27 255.45,238.36 259.29,234.45 263.14,230.55 267.01,226.64 270.89,222.73 274.79,218.83 278.71,214.92 282.63,211.02 286.57,207.11 290.51,203.20 294.46,199.30 298.41,195.39 302.36,191.48 306.30,187.58 310.23,183.67 314.15,179.77 318.05,175.86 321.91,171.95 325.75,168.05 329.55,164.14 333.31,160.23 337.01,156.33 340.66,152.42 344.25,148.52 347.77,144.61 351.22,140.70 354.60,136.80 357.92,132.89 361.18,128.98 364.39,125.08 367.59,121.17 370.82,117.27 374.13,113.36 377.63,109.45 381.42,105.55 385.68,101.64 390.63,97.73 396.52,93.83 403.70,89.92 412.52,86.02 423.43,82.11 436.85,78.20 453.21,74.30 472.83,70.39 495.95,66.48 522.55,62.58 552.35,58.67 584.75,54.77 618.79,50.86 653.21,46.95 670.00,45.00" fill="none" stroke="#1976d2" stroke-width="3"/>
-<text x="375.0" y="590" text-anchor="middle" font-family="sans-serif">ux / lid velocity</text>
-<text x="22" y="295.0" text-anchor="middle" transform="rotate(-90 22 295.0)" font-family="sans-serif">y / L</text>
+<text x="375.0" y="590" text-anchor="middle" font-family="sans-serif" font-size="18">ux / lid velocity</text>
+<text x="22" y="295.0" text-anchor="middle" transform="rotate(-90 22 295.0)" font-family="sans-serif" font-size="18">y / L</text>
 <line x1="80.00" y1="545" x2="80.00" y2="551" stroke="black"/>
-<text x="80.00" y="568" text-anchor="middle" font-family="sans-serif" font-size="12">-0.4</text>
+<text x="80.00" y="568" text-anchor="middle" font-family="sans-serif" font-size="14">-0.4</text>
 <line x1="164.29" y1="545" x2="164.29" y2="551" stroke="black"/>
-<text x="164.29" y="568" text-anchor="middle" font-family="sans-serif" font-size="12">-0.2</text>
+<text x="164.29" y="568" text-anchor="middle" font-family="sans-serif" font-size="14">-0.2</text>
 <line x1="248.57" y1="545" x2="248.57" y2="551" stroke="black"/>
-<text x="248.57" y="568" text-anchor="middle" font-family="sans-serif" font-size="12">0.0</text>
+<text x="248.57" y="568" text-anchor="middle" font-family="sans-serif" font-size="14">0.0</text>
 <line x1="332.86" y1="545" x2="332.86" y2="551" stroke="black"/>
-<text x="332.86" y="568" text-anchor="middle" font-family="sans-serif" font-size="12">0.2</text>
+<text x="332.86" y="568" text-anchor="middle" font-family="sans-serif" font-size="14">0.2</text>
 <line x1="417.14" y1="545" x2="417.14" y2="551" stroke="black"/>
-<text x="417.14" y="568" text-anchor="middle" font-family="sans-serif" font-size="12">0.4</text>
+<text x="417.14" y="568" text-anchor="middle" font-family="sans-serif" font-size="14">0.4</text>
 <line x1="501.43" y1="545" x2="501.43" y2="551" stroke="black"/>
-<text x="501.43" y="568" text-anchor="middle" font-family="sans-serif" font-size="12">0.6</text>
+<text x="501.43" y="568" text-anchor="middle" font-family="sans-serif" font-size="14">0.6</text>
 <line x1="585.71" y1="545" x2="585.71" y2="551" stroke="black"/>
-<text x="585.71" y="568" text-anchor="middle" font-family="sans-serif" font-size="12">0.8</text>
+<text x="585.71" y="568" text-anchor="middle" font-family="sans-serif" font-size="14">0.8</text>
 <line x1="670.00" y1="545" x2="670.00" y2="551" stroke="black"/>
-<text x="670.00" y="568" text-anchor="middle" font-family="sans-serif" font-size="12">1.0</text>
+<text x="670.00" y="568" text-anchor="middle" font-family="sans-serif" font-size="14">1.0</text>
 <line x1="74" y1="545.00" x2="80" y2="545.00" stroke="black"/>
-<text x="70" y="549.00" text-anchor="end" font-family="sans-serif" font-size="12">0.00</text>
+<text x="70" y="549.00" text-anchor="end" font-family="sans-serif" font-size="14">0.00</text>
 <line x1="74" y1="420.00" x2="80" y2="420.00" stroke="black"/>
-<text x="70" y="424.00" text-anchor="end" font-family="sans-serif" font-size="12">0.25</text>
+<text x="70" y="424.00" text-anchor="end" font-family="sans-serif" font-size="14">0.25</text>
 <line x1="74" y1="295.00" x2="80" y2="295.00" stroke="black"/>
-<text x="70" y="299.00" text-anchor="end" font-family="sans-serif" font-size="12">0.50</text>
+<text x="70" y="299.00" text-anchor="end" font-family="sans-serif" font-size="14">0.50</text>
 <line x1="74" y1="170.00" x2="80" y2="170.00" stroke="black"/>
-<text x="70" y="174.00" text-anchor="end" font-family="sans-serif" font-size="12">0.75</text>
+<text x="70" y="174.00" text-anchor="end" font-family="sans-serif" font-size="14">0.75</text>
 <line x1="74" y1="45.00" x2="80" y2="45.00" stroke="black"/>
-<text x="70" y="49.00" text-anchor="end" font-family="sans-serif" font-size="12">1.00</text>
+<text x="70" y="49.00" text-anchor="end" font-family="sans-serif" font-size="14">1.00</text>
 <circle cx="248.57" cy="545.00" r="4" fill="#d32f2f" stroke="white" stroke-width="1"/>
 <circle cx="214.07" cy="517.65" r="4" fill="#d32f2f" stroke="white" stroke-width="1"/>
 <circle cx="209.52" cy="513.75" r="4" fill="#d32f2f" stroke="white" stroke-width="1"/>
@@ -50,7 +50,7 @@
 <circle cx="536.99" cy="60.60" r="4" fill="#d32f2f" stroke="white" stroke-width="1"/>
 <circle cx="568.17" cy="56.70" r="4" fill="#d32f2f" stroke="white" stroke-width="1"/>
 <circle cx="670.00" cy="45.00" r="4" fill="#d32f2f" stroke="white" stroke-width="1"/>
-<line x1="455" y1="65" x2="490" y2="65" stroke="#1976d2" stroke-width="3"/><text x="500" y="70" font-family="sans-serif" font-size="13">LBM simulation</text>
-<circle cx="472" cy="88" r="4" fill="#d32f2f"/><text x="500" y="93" font-family="sans-serif" font-size="13">Ghia et al. (1982)</text>
-<text x="400" y="525" font-family="sans-serif" font-size="12" fill="gray">dashed line: ux = 0</text>
+<line x1="440" y1="65" x2="475" y2="65" stroke="#1976d2" stroke-width="3"/><text x="485" y="70" font-family="sans-serif" font-size="14">LBM simulation</text>
+<circle cx="457" cy="90" r="4" fill="#d32f2f"/><text x="485" y="95" font-family="sans-serif" font-size="14">Ghia et al. (1982)</text>
+<text x="400" y="525" font-family="sans-serif" font-size="14" fill="gray">dashed line: ux = 0</text>
 </svg>
