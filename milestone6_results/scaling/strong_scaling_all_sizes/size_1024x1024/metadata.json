@@ -1,0 +1,20 @@
+{
+  "job_id": "6823895",
+  "nodes": "uc3n070",
+  "nx": 1024,
+  "ny": 1024,
+  "steps": 600,
+  "repeats": 3,
+  "ranks": [
+    1,
+    2,
+    4,
+    8,
+    16,
+    32
+  ],
+  "executable_sha256": "d00a9fa1fa16365ad92fead963d063ada604162bd79d56af70d9f030fb3b19ee",
+  "mapping": "ppr:64:node",
+  "binding": "core",
+  "threads_per_rank": 1
+}
