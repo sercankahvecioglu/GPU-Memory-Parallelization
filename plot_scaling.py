@@ -46,10 +46,26 @@ def main():
     speedup = [r["speedup"] for r in summary]
     lower = [r["speedup"] - baseline/r["max_seconds"] for r in summary]
     upper = [baseline/r["min_seconds"] - r["speedup"] for r in summary]
+
+    # Presentation-legible sizing: 18 pt body text, 14 pt reference text (ticks/legend).
+    plt.rcParams.update({
+        "font.size": 18,
+        "axes.titlesize": 18,
+        "axes.labelsize": 18,
+        "xtick.labelsize": 14,
+        "ytick.labelsize": 14,
+        "legend.fontsize": 14,
+        "legend.frameon": False,
+        "axes.spines.top": False,
+        "axes.spines.right": False,
+    })
+
     fig, ax = plt.subplots(figsize=(8, 5.5), layout="constrained")
-    ax.plot(processes, processes, "--", color="0.55", label="Ideal: S(p) = p")
+    ax.plot(processes, processes, "--", color="0.55", linewidth=2, label="Ideal: S(p) = p")
+    # Viridis endpoints: dark purple for measured data reads clearly against the grey ideal line.
     ax.errorbar(processes, speedup, yerr=[lower, upper], fmt="o-", capsize=4,
-                color="#1565c0", label="Measured median; bars: runtime range")
+                linewidth=2, markersize=7, color="#440154",
+                label="Measured median; bars: runtime range")
     ax.set_xscale("log", base=2)
     ax.set_yscale("log", base=2)
     ax.set_xticks(processes, labels=[str(p) for p in processes])
@@ -66,6 +82,31 @@ def main():
     fig.savefig(args.results / "strong_scaling.png", dpi=180)
     fig.savefig(args.results / "strong_scaling.svg")
     fig.savefig(args.results / "strong_scaling.pdf")
+
+    # Separate efficiency figure, per https://pastewka.github.io/Accelerators/notes/scaling.html :
+    # log2 processes on x, efficiency as a 0-100% linear percentage on y, ideal
+    # drawn as a flat line at 100% rather than reusing the speedup plot's diagonal.
+    efficiency = [r["efficiency"] for r in summary]
+    eff_lower = [r["efficiency"] - baseline/r["max_seconds"]/r["ranks"] for r in summary]
+    eff_upper = [baseline/r["min_seconds"]/r["ranks"] - r["efficiency"] for r in summary]
+    fig2, ax2 = plt.subplots(figsize=(8, 5.5), layout="constrained")
+    ax2.axhline(1.0, linestyle="--", color="0.55", linewidth=2, label="Ideal: 100% efficiency")
+    ax2.errorbar(processes, efficiency, yerr=[eff_lower, eff_upper], fmt="o-", capsize=4,
+                linewidth=2, markersize=7, color="#440154",
+                label="Measured median; bars: runtime range")
+    ax2.set_xscale("log", base=2)
+    ax2.set_xticks(processes, labels=[str(p) for p in processes])
+    ax2.set_ylim(0, 1.1)
+    ax2.yaxis.set_major_formatter(lambda y, _: f"{y:.0%}")
+    ax2.set_xlabel(unit)
+    ax2.set_ylabel("Efficiency = Speedup / p")
+    ax2.set_title(f"bwUniCluster: {meta['nx']} × {meta['ny']}, {meta['steps']:,} timesteps")
+    ax2.grid(True, which="both", alpha=0.2)
+    ax2.legend(loc="lower left")
+    fig2.savefig(args.results / "efficiency.png", dpi=180)
+    fig2.savefig(args.results / "efficiency.svg")
+    fig2.savefig(args.results / "efficiency.pdf")
+
     print("ranks  median_seconds  speedup  efficiency")
     for r in summary:
         print(f"{r['ranks']:5}  {r['median_seconds']:14.6f}  {r['speedup']:7.3f}  {r['efficiency']:9.2%}")

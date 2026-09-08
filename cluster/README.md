@@ -120,10 +120,16 @@ communication-to-computation effect:
 .venv/bin/python plot_scaling_multisize.py milestone6_results/scaling/ARRAY_JOB_ID
 ```
 
-The plotting script requires matplotlib. It produces strong_scaling.png,
-strong_scaling.svg, strong_scaling.pdf, and summary.csv. It refuses incomplete
-runs or mixed grid/step configurations. Raw timing CSV, per-run logs, node/CPU
-metadata, modules and CMake cache are retained for reproducibility.
+The plotting script requires matplotlib. It produces strong_scaling.{png,svg,pdf}
+(speedup vs. ideal, per https://pastewka.github.io/Accelerators/notes/scaling.html),
+a separate efficiency.{png,svg,pdf} (efficiency = speedup/p on a 0-100% linear
+axis against a flat 100% ideal line, log2 process axis -- drawn as its own
+figure rather than folded into the speedup plot, matching the scaling notes'
+convention), and summary.csv. `plot_scaling_multisize.py` likewise produces
+both strong_scaling_multisize.{png,svg,pdf} and efficiency_multisize.{png,svg,pdf}.
+The scripts refuse incomplete runs or mixed grid/step configurations. Raw
+timing CSV, per-run logs, node/CPU metadata, modules and CMake cache are
+retained for reproducibility.
 
 The original milestone 5 MLUPS is not used as the speedup denominator: its
 kernel organization differs. The one-rank milestone6 executable is the matching
@@ -152,7 +158,8 @@ counts (16 ranks: 83.8% vs. 512x512's 97.8%) -- plausibly because its step
 count (600, vs. 20 000-150 000 for the smaller sizes) leaves less averaging
 of per-run overhead, rather than a real regression in the comm/comp trend.
 See `milestone6_results/scaling/strong_scaling_all_sizes/strong_scaling_multisize.{png,svg,pdf}`
-for the overlay plot.
+for the speedup overlay and `efficiency_multisize.{png,svg,pdf}` for the
+matching efficiency-vs-ideal-100% overlay.
 
 ## GPU strong scaling (A100 / H100)
 
