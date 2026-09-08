@@ -24,7 +24,7 @@ constexpr int BENCHMARK_STEPS = 2000;
 constexpr double LID_VELOCITY = 0.1;
 // This gives nu = 0.032 and Re = u_lid * NX / nu = 400 exactly.
 constexpr double OMEGA = 1.0 / 0.596;
-constexpr double CONVERGENCE_LIMIT = 1.0e-6;
+constexpr double CONVERGENCE_LIMIT = 1.0e-10;
 constexpr double WALL_DENSITY = 1.0;
 
 struct Lattice {
@@ -150,15 +150,16 @@ void write_fields(const Lattice& lattice,
     std::ofstream centerline_file(output_directory / "centerline_ux.csv");
     centerline_file << std::setprecision(16) << "y,y_over_L,ux,ux_over_lid_velocity\n";
 
-    const int center_x = NX / 2;
+    const int center_left = (NX - 1) / 2;
+    const int center_right = NX / 2;
     // The physical walls are half a lattice spacing outside the first and
     // last dry nodes. Add the exact no-slip wall values for comparison.
     centerline_file << -0.5 << ",0,0,0\n";
     for (int y = 0; y < NY; ++y) {
         const double physical_y = (static_cast<double>(y) + 0.5) / NY;
         centerline_file << y << ',' << physical_y << ','
-                        << ux(center_x, y) << ','
-                        << ux(center_x, y) / LID_VELOCITY << '\n';
+                        << (0.5 * (ux(center_left, y) + ux(center_right, y))) << ','
+                        << (0.5 * (ux(center_left, y) + ux(center_right, y))) / LID_VELOCITY << '\n';
     }
     centerline_file << NY - 0.5 << ",1," << LID_VELOCITY << ",1\n";
 }
@@ -249,6 +250,9 @@ int main(int argc, char* argv[]) {
         const auto end_time = std::chrono::steady_clock::now();
         const double seconds =
             std::chrono::duration<double>(end_time - start_time).count();
+        if (!(velocity_change < CONVERGENCE_LIMIT)) {
+            throw std::runtime_error("cavity did not converge within MAX_STEPS");
+        }
         double benchmark_seconds = 0.0;
         const double mlups = benchmark_mlups(lattice, benchmark_seconds);
 

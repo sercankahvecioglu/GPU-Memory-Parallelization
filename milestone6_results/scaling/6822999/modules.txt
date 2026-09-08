@@ -1,0 +1,6 @@
+
+Currently Loaded Modules:
+  1) compiler/gnu/14.2   2) devel/cuda/12.8   3) mpi/openmpi/5.0.8-gnu-14.2
+
+ 
+

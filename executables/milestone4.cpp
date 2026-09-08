@@ -23,7 +23,7 @@ constexpr int FIRST_FIT_STEP = 20;
 constexpr double EPSILON = 0.05;
 constexpr double PI = 3.14159265358979323846;
 
-'''To simulate different viscosities.'''
+// To simulate different viscosities.
 const std::array<double, 5> OMEGAS = {0.6, 0.8, 1.0, 1.2, 1.4};
 const std::array<int, 5> PROFILE_TIMES = {0, 100, 200, 500, 1000};
 
@@ -138,7 +138,7 @@ bool should_save_profile(int time) {
     return false;
 }
 
-'''Linear Regression Line Fit to find out the'''
+// Fit the logarithmic amplitude decay by linear regression.
 LineFit fit_log_amplitude(const std::vector<double>& amplitudes) {
     double sum_t = 0.0; 
     double sum_log_a = 0.0;

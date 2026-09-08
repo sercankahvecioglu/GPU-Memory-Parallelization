@@ -223,7 +223,7 @@ def write_benchmark_comparison(centerline, output_directory):
 
     csv_file = output_directory / "benchmark_comparison.csv"
     with csv_file.open("w", newline="") as file:
-        writer = csv.writer(file)
+        writer = csv.writer(file, lineterminator="\n")
         writer.writerow([
             "y_over_L", "ghia_ux_over_lid", "simulation_ux_over_lid",
             "error", "absolute_error",
@@ -236,15 +236,24 @@ def write_benchmark_comparison(centerline, output_directory):
     )
     maximum_error = max(abs(error) for _, _, _, error in comparisons)
 
+    # Relative error is undefined at the stationary wall (benchmark velocity zero).
+    maximum_relative_error = max(
+        abs(error / benchmark_ux)
+        for _, benchmark_ux, _, error in comparisons if benchmark_ux != 0.0
+    )
+
     summary_file = output_directory / "benchmark_summary.txt"
     summary_file.write_text(
         "benchmark=Ghia_Ghia_Shin_1982_Re400\n"
         f"number_of_points={len(comparisons)}\n"
         f"rmse={rmse:.16g}\n"
         f"maximum_absolute_error={maximum_error:.16g}\n"
+        "absolute_error_normalization=lid_velocity\n"
+        f"maximum_relative_error_nonzero_points={maximum_relative_error:.16g}\n"
     )
     print(f"Benchmark RMSE: {rmse:.6f}")
     print(f"Benchmark maximum absolute error: {maximum_error:.6f}")
+    print(f"Benchmark maximum relative error (nonzero points): {maximum_relative_error:.2%}")
 
 
 def main():
@@ -261,6 +270,13 @@ def main():
     centerline_file = args.results_directory / "centerline_ux.csv"
     if not fields_file.exists() or not centerline_file.exists():
         raise FileNotFoundError("Run the milestone5 executable before plotting.")
+
+    summary = dict(
+        line.split("=", 1)
+        for line in (args.results_directory / "summary.txt").read_text().splitlines()
+    )
+    if not math.isclose(float(summary["reynolds_number"]), 400.0, rel_tol=1e-9):
+        raise ValueError("The bundled Ghia benchmark requires Re = 400.")
 
     fields = read_csv(fields_file)
     centerline = read_csv(centerline_file)

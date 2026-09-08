@@ -1,0 +1,32 @@
+JobId=6822867 JobName=yalb-scaling-a100
+   UserId=fr_ak1598(1030787) GroupId=fr_fr(500006) MCS_label=N/A
+   Priority=4441 Nice=0 Account=fr QOS=normal
+   JobState=RUNNING Reason=None Dependency=(null)
+   Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0
+   RunTime=00:00:13 TimeLimit=00:30:00 TimeMin=N/A
+   SubmitTime=2026-09-07T22:30:23 EligibleTime=2026-09-07T22:30:23
+   AccrueTime=2026-09-07T22:30:23
+   StartTime=2026-09-07T22:30:28 EndTime=2026-09-07T23:00:30 Deadline=N/A
+   SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-09-07T22:30:28 Scheduler=Backfill
+   Partition=gpu_a100_il AllocNode:Sid=uc3n990:3690148
+   ReqNodeList=(null) ExcNodeList=(null)
+   NodeList=uc2n909
+   BatchHost=uc2n909
+   NumNodes=1 NumCPUs=128 NumTasks=4 CPUs/Task=4 ReqB:S:C:T=0:0:*:*
+   ReqTRES=cpu=16,mem=64G,node=1,billing=16,gres/gpu=4
+   AllocTRES=cpu=128,mem=64G,node=1,billing=128,gres/gpu=4
+   Socks/Node=* NtasksPerN:B:S:C=4:0:*:1 CoreSpec=*
+   MinCPUsNode=16 MinMemoryTRES=127500M MinTmpDiskNode=0
+   Features=(null) DelayBoot=00:00:00
+   OverSubscribe=NO Contiguous=0 Licenses=(null) LicensesAlloc=(null) Network=(null)
+   Command=/pfs/data6/home/fr/fr_fr/fr_ak1598/yalb-scaling-20260907/cluster/strong_scaling_gpu_a100.sbatch
+   SubmitLine=sbatch cluster/strong_scaling_gpu_a100.sbatch
+   WorkDir=/pfs/data6/home/fr/fr_fr/fr_ak1598/yalb-scaling-20260907
+   StdErr=
+   StdIn=/dev/null
+   StdOut=/pfs/data6/home/fr/fr_fr/fr_ak1598/yalb-scaling-20260907/strong-scaling-gpu-a100-6822867.out
+   MemPerTres=gpu:127500
+   TresBind=gres/gpu:per_task:1
+   TresPerNode=gres/gpu:4
+   TresPerTask=cpu=4,gres/gpu=1
+

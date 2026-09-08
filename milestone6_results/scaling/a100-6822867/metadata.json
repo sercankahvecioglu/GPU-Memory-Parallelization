@@ -1,0 +1,18 @@
+{
+  "job_id": "6822867",
+  "nodes": "uc2n909",
+  "backend": "cuda",
+  "gpu_arch": "a100",
+  "nx": 4096,
+  "ny": 4096,
+  "steps": 2000,
+  "repeats": 3,
+  "ranks": [
+    1,
+    2,
+    4
+  ],
+  "executable_sha256": "38fe75e77b9f3b2df680494e64813f1101fc558152532ba2f63cabfdd16b02f8",
+  "launcher": "srun --gpus-per-task=1",
+  "threads_per_rank": 1
+}

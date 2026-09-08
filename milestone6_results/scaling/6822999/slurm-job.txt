@@ -1,0 +1,29 @@
+JobId=6822999 JobName=yalb-scaling
+   UserId=fr_ak1598(1030787) GroupId=fr_fr(500006) MCS_label=N/A
+   Priority=4415 Nice=0 Account=fr QOS=normal
+   JobState=RUNNING Reason=None Dependency=(null)
+   Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0
+   RunTime=00:00:22 TimeLimit=00:15:00 TimeMin=N/A
+   SubmitTime=2026-09-07T23:10:59 EligibleTime=2026-09-07T23:10:59
+   AccrueTime=2026-09-07T23:10:59
+   StartTime=2026-09-07T23:12:36 EndTime=2026-09-07T23:27:39 Deadline=N/A
+   SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-09-07T23:12:36 Scheduler=Backfill
+   Partition=dev_cpu AllocNode:Sid=uc3n990:541120
+   ReqNodeList=(null) ExcNodeList=(null)
+   NodeList=uc3n069
+   BatchHost=uc3n069
+   NumNodes=1 NumCPUs=192 NumTasks=64 CPUs/Task=1 ReqB:S:C:T=0:0:*:1
+   ReqTRES=cpu=64,mem=6G,node=1,billing=64
+   AllocTRES=cpu=192,mem=6G,node=1,billing=192
+   Socks/Node=* NtasksPerN:B:S:C=64:0:*:1 CoreSpec=*
+   MinCPUsNode=64 MinMemoryNode=6G MinTmpDiskNode=0
+   Features=(null) DelayBoot=00:00:00
+   OverSubscribe=NO Contiguous=0 Licenses=(null) LicensesAlloc=(null) Network=(null)
+   Command=/pfs/data6/home/fr/fr_fr/fr_ak1598/yalb-scaling-20260907/cluster/strong_scaling.sbatch
+   SubmitLine=sbatch cluster/strong_scaling.sbatch
+   WorkDir=/pfs/data6/home/fr/fr_fr/fr_ak1598/yalb-scaling-20260907
+   StdErr=
+   StdIn=/dev/null
+   StdOut=/pfs/data6/home/fr/fr_fr/fr_ak1598/yalb-scaling-20260907/strong-scaling-6822999.out
+   TresPerTask=cpu=1
+

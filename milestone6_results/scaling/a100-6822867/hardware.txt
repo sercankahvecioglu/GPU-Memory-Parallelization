@@ -1,0 +1,2 @@
+uc2n909.localdomain
+GPU 0: NVIDIA A100 80GB PCIe (UUID: GPU-ec1a0d62-cac2-a7b0-98df-ede35af2a5fd)
