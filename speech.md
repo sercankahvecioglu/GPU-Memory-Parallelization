@@ -9,12 +9,10 @@ parallelism and MPI for distributed-memory domain decomposition.
 
 ## 1. Introduction (≈1 min)
 
-Good [morning/afternoon]. I'm going to walk you through YALB — my Lattice
-Boltzmann solver for the Accelerators project. The goal of the project was
+Good afternoon. I'm going to walk you through my LBM solver. The goal of the project was
 to implement a D2Q9 lattice Boltzmann solver, validate it against known
 physics, make it fast, and then make it run on more than one core and more
-than one machine. I'll show you what I built, how it's structured, what it
-costs and gains me compared to the "textbook" approach from the lecture,
+than one machine. I'll show you what I built,
 show you a live run of the classic lid-driven cavity benchmark, and finish
 with performance numbers and what I'd change next time.
 
@@ -29,9 +27,7 @@ numerical kernels — `Kokkos::View` for the population, density and velocity
 arrays, and `Kokkos::parallel_for` for every loop over the lattice — that
 can be compiled against different execution backends (Serial, OpenMP,
 CUDA, ...) without touching the kernel code. On top of that single-node
-layer, I hand-wrote the domain decomposition and halo exchange in MPI
-myself, rather than relying on a library that would have hidden the
-communication pattern from me. So the mental model is: Kokkos parallelizes
+layer, I wrote the domain decomposition and halo exchange in MPI. So the mental model is: Kokkos parallelizes
 *within* a rank, MPI parallelizes *across* ranks, and the two composes into
 one hybrid MPI+Kokkos solver.
 
@@ -50,10 +46,10 @@ as the milestones prescribed:
   compare it against the analytic `nu = (1/omega - 1/2)/3` relation across
   five omega values — this is the classic sanity check that the collision
   operator produces the correct transport coefficient.
-- **Milestone 5**: the lid-driven cavity at Re = 400 on a 128×128 grid,
+- **Milestone 5**: the lid-driven cavity at Reynolds Number = 400 on a 128×128 grid,
   run to steady state (convergence limit 1e-10 on the max velocity change,
   checked every 100 steps), and validated against the Ghia, Ghia & Shin
-  1982 reference velocity profile.
+  reference velocity profile.
 - **Milestone 6**: the same cavity solver, re-implemented for distributed
   memory: the domain is split into contiguous vertical strips across MPI
   ranks, each rank owns its columns plus two ghost columns, and only the
@@ -72,12 +68,10 @@ plain functions that take `Kokkos::View`s and dispatch a `parallel_for`
 over a flattened index. Swapping `Kokkos::Serial` for `Kokkos::OpenMP` or a
 GPU backend is a CMake/compile-time decision, not a rewrite.
 
-The other deliberate choice is *not* using a distributed array library —
-no Kokkos "remote spaces", no PETSc-style DistributedArray. I wrote the
+The other deliberate choice is *not* using a distributed array library. I wrote the
 halo exchange by hand with two `MPI_Sendrecv` calls per timestep, moving
-only the three post-collision populations that travel in each direction
-(channels 1, 5, 8 rightward; 3, 6, 7 leftward — the diagonals that would
-hit a wall are dropped from the message). That's `3*NY - 2` doubles per
+only the three post-collision populations that travel in each direction. 
+That's `3*NY - 2` doubles per
 neighbor, not the full ghost column, which cuts the exchanged volume
 compared to a naive "send everything" halo. It also means the boundary
 logic — physical wall vs. MPI interface — has to be resolved from global
@@ -106,7 +100,8 @@ travel.
 
 ## 6. Results — show it works (≈1.5 min)
 
-*(cut to the recorded video of the sliding lid here)*
+*(cut to the recorded cavity-evolution GIF here —
+`milestone5_results/cavity_evolution.gif`)*
 
 This is the milestone 5 lid-driven cavity at Reynolds number 400, run to
 steady state on a 128×128 grid — you can see the classic primary vortex
@@ -119,27 +114,32 @@ to within 8.9e-16 in population values across 1, 2, 3 and 4 MPI ranks —
 essentially machine precision — and mass and kinetic energy are conserved
 across ranks to the same tolerance.
 
-## 7. Performance — GLUPS (≈1.5 min)
+## 7. Performance — GLUPS and strong scaling (≈2 min)
 
-The single-rank, Kokkos-Serial baseline sustains **19.44 million lattice
-updates per second (MLUPS)** on a 128×128 cavity — that's 0.0194 GLUPS, or
-1.944e-5 GLUPS in the requested 10^9-per-second units, measured over 2,000
-timesteps with synchronization included and I/O and convergence checks
-excluded.
+The single-rank, Kokkos-Serial baseline on the milestone 6 solver sustains
+**20.98 million lattice updates per second (MLUPS)** on a 256×256 cavity —
+2.10e-5 GLUPS in the requested 10^9-per-second units — measured on one
+bwUniCluster CPU core over 20,000 timesteps, with 100 untimed warmup steps
+discarded and I/O, diagnostics, and convergence checks excluded from the
+timed region.
 
-[If you have run cluster/strong_scaling.sbatch by presentation time, replace
-this paragraph with the actual numbers: report GLUPS for 1, 2, 4, 8, 16, 32,
-64 ranks on the 256×256/20,000-step strong-scaling sweep, and quote speedup
-and parallel efficiency at the largest rank count from
-milestone6_results/scaling/<JOBID>/summary.csv.]
+**CPU strong scaling** (same 256×256 problem, 1→32 MPI ranks, one rank per
+core, 3 repeats): throughput climbs to **616.97 MLUPS at 32 cores** — a
+29.4x speedup, 92% parallel efficiency. I didn't stop at one problem size:
+I swept the same 1-32 rank ladder across five grid sizes (64² up to 1024²)
+to test whether the halo exchange's fixed per-step cost starts to dominate
+as each rank's share of the domain shrinks. It does, exactly as predicted —
+parallel efficiency at 32 ranks rises monotonically with problem size, from
+61% at 64×64 up to 96% at 512×512, before edging down slightly to 95% at
+1024×1024 (that grid uses fewer, longer timesteps, so its numbers are a bit
+noisier). Small grids are communication-bound; large grids are not.
 
-The scaling study itself — 256×256 cells, 20,000 steps, Re = 800, at 1
-through 64 MPI ranks with three repeats each — is designed and scripted
-(`cluster/run_scaling.py`, `cluster/strong_scaling.sbatch`) to run on
-bwUniCluster; [state here whether it has completed by presentation day].
-It measures pure solver time — collision, halo exchange, streaming, field
-update — with MPI_MAX taken over ranks so the slowest rank sets the
-reported time.
+**GPU strong scaling**: the same Kokkos source, recompiled for CUDA, no
+code changes. One A100 sustains **2998 MLUPS** on a 4096×4096 grid — about
+**143x** a single CPU core — and scaling to 4 A100s reaches **10,432
+MLUPS**, 87% efficiency (3.48x speedup). That's over 10 GLUPS on 4 GPUs
+from one hybrid Kokkos+MPI codebase that also runs, unmodified, on a single
+laptop core.
 
 ## 8. Discussion (≈1 min)
 
@@ -150,13 +150,17 @@ cells, global-vs-local coordinates, and making sure a distributed run
 gives bit-compatible-to-precision results against the serial reference.
 Writing the `--check-solver` cross-validation mode early would have saved
 me time; I added it after already debugging several halo bugs by hand.
+The multi-size scaling sweep confirmed a suspicion I had going in — small
+grids are communication-bound at high rank counts — but I only had a
+number for it after actually running the five-size ladder, not before.
 
 What I'd do differently next time: build the correctness harness
-(analytic tests, serial-vs-parallel diffing) *before* writing the
-parallel kernel, not after. I'd also profile the halo exchange
-communication-to-computation ratio before assuming vertical strip
-decomposition scales well to 64 ranks — a 256-column domain across 64
-ranks gives each rank only 4 columns, which is a communication-bound
-regime I have not yet measured.
+(analytic tests, serial-vs-parallel diffing) *before* writing the parallel
+kernel, not after. I'd also budget more cluster time for edge cases: my
+64-rank runs hung outright (18.6% CPU efficiency over a 7.5-minute
+timeout, most ranks idle) rather than degrading gracefully, most likely an
+MPI launch/binding issue at that process count rather than a bug in the
+halo exchange itself — I didn't have time to isolate it further this
+round, so the CPU story stops at a clean 1-32 rank curve.
 
 Thank you — happy to take questions, including on the code itself.

@@ -64,6 +64,15 @@ with the `.sbatch` files -- syncing only the `.sbatch` once left a stale
 every array task with `unrecognized arguments: --size-index N` before the
 mismatch was caught.
 
+Cluster login: `fr_ak1598@uc3.scc.kit.edu` (bwUniCluster 3.0, uc3n* login
+nodes). Sync the whole project, not just `cluster/`, since source changes
+under `executables/`, `src/`, `include/` need rebuilding too:
+
+```bash
+rsync -av --exclude 'build*' --exclude '__pycache__' \
+    . fr_ak1598@uc3.scc.kit.edu:~/yalb/
+```
+
 Build on the cluster after transferring the project sources:
 
 ```bash
@@ -101,9 +110,12 @@ ARRAY_JOB_IDs, copy each `size_NxN` subdirectory into one shared local folder
 rather than two separate ARRAY_JOB_ID folders, e.g.:
 
 ```bash
+# Cluster login: fr_ak1598@uc3.scc.kit.edu (bwUniCluster 3.0, uc3n* login
+# nodes). REMOTE_PATH below is assumed to be ~/yalb -- adjust if the project
+# lives elsewhere in the home directory.
 mkdir -p milestone6_results/scaling/strong_scaling_all_sizes
-scp -r cluster:.../scaling-results/FIRST_ARRAY_JOB_ID/size_* milestone6_results/scaling/strong_scaling_all_sizes/
-scp -r cluster:.../scaling-results/SECOND_ARRAY_JOB_ID/size_1024x1024 milestone6_results/scaling/strong_scaling_all_sizes/
+scp -r fr_ak1598@uc3.scc.kit.edu:~/yalb/scaling-results/FIRST_ARRAY_JOB_ID/size_* milestone6_results/scaling/strong_scaling_all_sizes/
+scp -r fr_ak1598@uc3.scc.kit.edu:~/yalb/scaling-results/SECOND_ARRAY_JOB_ID/size_1024x1024 milestone6_results/scaling/strong_scaling_all_sizes/
 ```
 
 `plot_scaling_multisize.py` only reads `size_NxN` subdirectories, so it does
@@ -169,6 +181,22 @@ already stages packed halo data through host mirrors before every MPI call
 GPU without requiring CUDA-aware MPI. It is a portability choice, not a
 performance-tuned one -- the host round trip costs an extra device-to-host
 and host-to-device copy per exchange that a CUDA-aware MPI build could skip.
+
+This is not a hypothetical trade-off: CUDA-aware MPI was tried and confirmed
+unavailable on this cluster (bwUniCluster 3.0 / uc3, checked from a
+uc3n991 login-node shell via `ompi_info --parsable --all | grep
+mpi_built_with_cuda_support`). Every MPI module available there --
+`mpi/openmpi/5.0.8-gnu-14.2`, `mpi/openmpi/5.0.8-nvidia-24.9-nompi`, and
+`mpi/openmpi/5.0.8-nvidia-25.1-nompi` (the latter two resolve to
+`toolkit/nvidia-hpc-sdk/{24.9,25.1}` under Lmod, despite the "nvidia"
+naming which might suggest CUDA-aware support) -- reports
+`mpi_built_with_cuda_support:value:false`. `module avail mpi` on this
+cluster shows no other candidates. So the host-staged path in
+`HaloExchange::exchange` (passing packed buffers through `Buffer::HostMirror`
+and `Kokkos::deep_copy` around each `MPI_Sendrecv`) is not just a defensive
+default, it is the only correct option here; passing GPU device pointers
+directly to `MPI_Sendrecv` on this cluster would segfault or silently
+corrupt data rather than just run slower.
 
 Build separately per GPU generation (compiling for the wrong architecture
 flag works via forward compatibility but is not optimal):
