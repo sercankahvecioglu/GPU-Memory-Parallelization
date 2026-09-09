@@ -27,4 +27,11 @@ jobs:
 
     - name: Test
       working-directory: ${{github.workspace}}/build
+      # GitHub-hosted runners have only 2 CPU cores, but some Milestone 6
+      # tests request 3 MPI ranks. OpenMPI treats core count as the slot
+      # limit by default and refuses to oversubscribe -- this env var lifts
+      # that limit for CI only; it has no effect on cluster runs, which have
+      # real cores to spare.
+      env:
+        OMPI_MCA_rmaps_base_oversubscribe: "1"
       run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure
